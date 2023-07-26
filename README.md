@@ -1,2 +1,2 @@
 # Glisserd.github.io
-My first lil' thing.
+My first part.
