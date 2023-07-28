@@ -57,41 +57,44 @@ var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0),
 rampAt(xFn, zFn, 0.07, -Math.PI / 4, scene);
 
 scene.registerAfterRender(function() {
-var vel = playerSphere.physicsImpostor.getLinearVelocity();
-playerSphere.physicsImpostor.setLinearVelocity(vel.scale(.98));
+	var vel = playerSphere.physicsImpostor.getLinearVelocity();
+	playerSphere.physicsImpostor.setLinearVelocity(vel.scale(.98));
 
-var forward = camera.getFrontPosition(1).subtract(camera.position);
-forward.y = 0;
-forward = forward.normalize().scale(2);
+	var currentT = tLookup(xFn, zFn, 500, playerSphere.position.x, playerSphere.position.z);
 
-var backward = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY(Math.PI));
+	// var angle = (derivAngle(currentT, xFn, zFn) - (Math.PI));
+	// camera.alpha += (angle - camera.alpha) / 32;
 
-var left = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY((3 * Math.PI) / 2));
+	if (currentT > 0.99) {
+	win();
+	}
 
-var right = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY(Math.PI / 2));
+	if (playerSphere.position.y < -10) {
+	lost();
+	}
 
-if (keys.w) {
-playerSphere.applyImpulse(forward, playerSphere.getAbsolutePosition());
-}
-if (keys.s) {
-playerSphere.applyImpulse(backward, playerSphere.getAbsolutePosition());
-}
-if (keys.a) {
-playerSphere.applyImpulse(left, playerSphere.getAbsolutePosition());
-}
-if (keys.d) {
-playerSphere.applyImpulse(right, playerSphere.getAbsolutePosition());
-}
+	var forward = camera.getFrontPosition(1).subtract(camera.position);
+	forward.y = 0;
+	forward = forward.normalize().scale(2);
 
-var currentT = tLookup(xFn, zFn, 500, playerSphere.position.x, playerSphere.position.z);
+	var backward = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY(Math.PI));
 
-if (currentT > 0.99) {
-win();
-}
+	var left = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY((3 * Math.PI) / 2));
 
-if (playerSphere.position.y < -10) {
-lost();
-}
+	var right = BABYLON.Vector3.TransformCoordinates(forward, BABYLON.Matrix.RotationY(Math.PI / 2));
+
+	if (keys.w) {
+	playerSphere.applyImpulse(forward, playerSphere.getAbsolutePosition());
+	}
+	if (keys.s) {
+	playerSphere.applyImpulse(backward, playerSphere.getAbsolutePosition());
+	}
+	if (keys.a) {
+	playerSphere.applyImpulse(left, playerSphere.getAbsolutePosition());
+	}
+	if (keys.d) {
+	playerSphere.applyImpulse(right, playerSphere.getAbsolutePosition());
+	}
 });
 
 
@@ -133,7 +136,7 @@ return minT;
 
 function derivAngle(t, xFn, zFn) {
 function derive(f, x) {
-var h = 2.2e-10;
+var h = 2.2e-20;
 return (f(x + h) - f(x - h)) / (2 * h);
 }
 return Math.atan2(derive(zFn, t), derive(xFn, t));
@@ -146,16 +149,36 @@ width: .25,
 depth: 12
 }, scene);
 ramp.material = new BABYLON.StandardMaterial("rampMaterial", scene);
-ramp.material.diffuseColor = new BABYLON.Color3(0.2, 0.7, 0.2);
+ramp.material.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
 ramp.physicsImpostor = new BABYLON.PhysicsImpostor(ramp, BABYLON.PhysicsImpostor.BoxImpostor, {
 mass: 0,
 restitution: 0.9
 }, scene);
-ramp.position = new BABYLON.Vector3(30, 3.2, zFn(t));
+ramp.position = new BABYLON.Vector3(330, 3.2, 450);
 
-ramp.rotation.z = angle;
-ramp.rotation.y = -derivAngle(t, xFn, zFn);
+ramp.rotation.z = angle; 
+ramp.rotation.y = -derivAngle-(t, xFn, zFn);
 }
+
+function wallAt(xFn, zFn, t, offset, scene) {
+var wall = BABYLON.MeshBuilder.CreateBox('wall', {
+height: 8,
+width: .25,
+depth: 12
+}, scene);
+angle = -derivAngle(t, xFn, zFn);
+wall.material = new BABYLON.StandardMaterial("wallMaterial", scene);
+wall.material.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+wall.physicsImpostor = new BABYLON.PhysicsImpostor(wall, BABYLON.PhysicsImpostor.BoxImpostor, {
+mass: 0,
+restitution: 0.9
+}, scene);
+wall.position = new BABYLON.Vector3(xFn(t) + (offset * Math.sin(angle)), 4, zFn(t) + (offset * Math.cos(angle)));
+wall.rotation.y = angle + (Math.PI / 2);
+return wall;
+}
+
+wallAt(xFn, zFn, 1, 10, scene);
 
 engine.runRenderLoop(scene.render.bind(scene));
 window.addEventListener('resize', engine.resize.bind(engine));
